@@ -51,8 +51,8 @@
 (defvar doconce-footnote-face 'doconce-footnote-face
   "Face name to use for footnote identifiers.")
 
-(defvar doconce-url-face 'doconce-url-face
-  "Face name to use for URLs.")
+(defvar doconce-link-face 'doconce-link-face
+  "Face name to use for links.")
 
 (defvar doconce-comment-face 'doconce-comment-face
   "Face name to use for comments.")
@@ -60,7 +60,7 @@
 (defvar doconce-math-face 'doconce-math-face
   "Face name to use for LaTeX expressions.")
 
-(defvar doconce-special-lines-face 'doconce-special-lines
+(defvar doconce-special-lines-face 'doconce-special-lines-face
   "Face name to use for special lines.")
 
 (defvar doconce-admonition-face 'doconce-admonition-face
@@ -91,9 +91,9 @@
   "Face for footnote markers."
   :group 'doconce-faces)
 
-(defface doconce-url-face
-  '((t (:inherit font-lock-string-face)))
-  "Face for URLs."
+(defface doconce-link-face
+  '((t (:inherit link)))
+  "Face for links."
   :group 'doconce-faces)
 
 (defface doconce-comment-face
@@ -124,6 +124,10 @@
   "^==+ *.+ *==+$"
   "Regexp identifying Doconce headers.")
 
+(defconst doconce-regex-admonitions
+  "^__.+?[.:?]__"
+  "Regexp identifying Doconce admonitions.")
+
 (defconst doconce-regex-code
   "^!bc[^§]+?!ec"
   "Regular expression for matching code blocks.")
@@ -140,9 +144,9 @@
   "<\\(\\(\\sw\\|\\s_\\|\\s.\\)+@\\(\\sw\\|\\s_\\|\\s.\\)+\\)>"
   "Regular expression for matching inline email addresses.")
 
-(defconst doconce-regex-url
-  ""
-  "Regular expression for matching URL's.")
+(defconst doconce-regex-link
+  "\\(\".*\"\\):[ \t\n]*\\(\".*\"\\)"
+  "Regular expression for matching links.")
 
 (defconst doconce-regex-comment
   "^#.+$"
@@ -157,7 +161,7 @@
   "Regular expression for LaTeX equations.")
 
 (defconst doconce-regex-special-lines
-  "\\(^\\(FIGURE\\|MOVIE\\|AUTHOR\\|TITLE\\):.+$\\)"
+  "\\(^\\(FIGURE\\|MOVIE\\|AUTHOR\\|TITLE\\|DATE\\|BIBFILE\\):.+$\\)"
   "Regular expression for special lines.")
 
 (defconst doconce-regex-reference
@@ -165,22 +169,27 @@
   "Regular expression for references.")
 
 (defvar doconce-keywords
-  '("bwarning" "ewarning" "bquote" "equote" "bnotice" "enotice" "bsummary"
-    "esummary" "bquestion" "equestion" "bblock" "eblock" "bbox" "ebox"
-    "bsubex" "esubex" "bhint" "ehint" "bsol" "esol" "bans" "eans" "bremarks"
-    "eremarks" "bpop" "epop" "bslidecell" "eslidecell" "idx" "TOC" "label"))
+  '("!bwarning" "!ewarning" "!bquote" "!equote" "!bnotice" "!enotice"
+  "!bsummary" "!esummary" "!bquestion" "!equestion" "!bblock" "!eblock"
+  "!bbox" "!ebox" "!bsubex" "!esubex" "!bhint" "!ehint" "!bsol" "!esol"
+  "!bans" "!eans" "!bremarks" "eremarks" "!bpop" "epop" "!bslidecell"
+  "eslidecell" "idx" "TOC" "label" "cite"))
 
 (defvar doconce-mode-font-lock-keywords-basic
   (list
-   (cons doconce-regex-header 'doconce-header-face)
    (cons doconce-regex-comment 'doconce-comment-face)
-   (cons doconce-regex-inline-code 'doconce-code-face)
+   (cons doconce-regex-header 'doconce-header-face)
+   (cons doconce-regex-admonitions 'doconce-header-face)
    (cons doconce-regex-math-inline '(2 doconce-math-face))
    (cons doconce-regex-math-display '(1 doconce-header-face))
+   (cons doconce-regex-inline-code 'doconce-code-face)
+   (cons doconce-regex-code-file 'doconce-special-lines-face)
    (cons doconce-regex-email 'doconce-url-face)
+   (cons doconce-regex-link '((1 doconce-link-face)
+                              (2 doconce-link-face)))
    (cons doconce-regex-footnote 'doconce-footnote-face)
    (cons doconce-regex-special-lines '(1 doconce-special-lines-face)))
-  "Syntax highlighting for Markdown files.")
+  "Syntax highlighting for Doconce files.")
 
 (defun doconce-font-lock-extend-region ()
   "Extend the search region to include an entire block of text.
@@ -203,16 +212,10 @@ This helps improve font locking for block constructs such as pre blocks."
   (when (eq major-mode 'doconce-mode)
     (setq doconce-mode-font-lock-keywords
           (append
-           doconce-keywords
-           doconce-mode-font-lock-keywords-basic))
+           doconce-mode-font-lock-keywords-basic
+           doconce-keywords))
     (setq font-lock-defaults (list doconce-mode-font-lock-keywords))
     (font-lock-refresh-defaults)))
-
-(defvar doconce-mode-syntax-table
-  (let ((tab (make-syntax-table text-mode-syntax-table)))
-    (modify-syntax-entry ?\" "." tab)
-    tab)
-  "Syntax table for `doconce-mode'.")
 
 (define-derived-mode doconce-mode text-mode "Doconce"
   "Major mode for the Doconce markup language."
@@ -225,6 +228,6 @@ This helps improve font locking for block constructs such as pre blocks."
   (set (make-local-variable 'font-lock-multiline) t)
   (doconce-reload-extensions)
   (add-hook 'font-lock-extend-region-functions
-            'doconce-font-lock-extend-region)
-  )
+            'doconce-font-lock-extend-region))
+
 ;;; doconce-mode.el ends here
