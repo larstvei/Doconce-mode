@@ -27,6 +27,8 @@
 
 (require 'font-lock)
 (require 'outline)
+(require 'button)
+(require 'org)
 
 (defconst doconce-mode-version "0.1"
   "Doconce mode version number.")
@@ -44,8 +46,11 @@
 
 ;;; Font lock
 
+(defvar doconce-emphasized-face 'doconce-emphasized-face
+  "Face name to use for emphasized words.")
+
 (defvar doconce-code-face 'doconce-code-face
-  "Face name to use for italic text.")
+  "Face name to use for code.")
 
 (defvar doconce-inline-code-face 'doconce-inline-code-face
   "Face name to use for inline code.")
@@ -75,6 +80,11 @@
   "Faces used in Doconce Mode"
   :group 'doconce
   :group 'faces)
+
+(defface doconce-emphasized-face
+  '((t (:slant italic)))
+  "Face for emphasized words."
+  :group 'doconce-faces)
 
 (defface doconce-header-face
   '((t (:inherit font-lock-function-name-face :weight bold)))
@@ -120,6 +130,10 @@
   '((t (:inherit doconce-header-face)))
   "Face for admonitions."
   :group 'doconce-faces)
+
+(defconst doconce-regex-emphasized
+  "\\*\\(.*\\)\\*"
+  "Regular expression for emphasized words.")
 
 (defconst doconce-regex-footnote
   "\\[\\^.+?\\]"
@@ -185,6 +199,7 @@
    (cons doconce-regex-comment 'doconce-comment-face)
    (cons doconce-regex-header 'doconce-header-face)
    (cons doconce-regex-admonitions 'doconce-header-face)
+   (cons doconce-regex-emphasized '(1 doconce-emphasized-face))
    (cons doconce-regex-math-inline '(2 doconce-code-face))
    (cons doconce-regex-math-display '(2 doconce-code-face))
    (cons doconce-regex-code '(2 doconce-code-face))
@@ -208,9 +223,7 @@
                "Link: " nil 'minibuffer-history "http://"))
         (point (point)))
     (insert "\"" desc "\": \"")
-    (insert-text-button link
-                   'follow-link t
-                   'action #'browse-url-at-point)
+    (insert-text-button link 'follow-link t)
     (insert "\"")))
 
 (defun doconce-insert-heading ()
@@ -418,6 +431,7 @@ Calls `doconce-cycle' with argument t."
 (defvar doconce-mode-map
   (let ((map (make-keymap)))
     ;; Visibility cycling
+    (define-key map (kbd "TAB") 'doconce-cycle)
     (define-key map (kbd "<tab>") 'doconce-cycle)
     (define-key map (kbd "<S-iso-lefttab>") 'doconce-shifttab)
     (define-key map (kbd "<S-tab>")  'doconce-shifttab)
@@ -427,12 +441,11 @@ Calls `doconce-cycle' with argument t."
     (define-key map (kbd "<M-left>")  'doconce-demote)
 
     (define-key map (kbd "C-c C-l") 'doconce-insert-link)
+    (org-defkey map (kbd "C-c C-o") 'org-open-at-point)
 
     (define-key map [remap outline-insert-heading] 'doconce-insert-heading)
     (define-key map [remap outline-promote] 'doconce-promote)
     (define-key map [remap outline-demote] 'doconce-demote)
-
-    (define-key map [follow-link] 'mouse-face)
 
     map)
   "Keymap for Doconce major mode.")
