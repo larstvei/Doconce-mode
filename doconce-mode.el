@@ -55,6 +55,9 @@
 (defvar doconce-inline-code-face 'doconce-inline-code-face
   "Face name to use for inline code.")
 
+(defvar doconce-list-face 'doconce-list-face
+  "Face name to use for lists.")
+
 (defvar doconce-header-face 'doconce-header-face
   "Face name to use for level-1 headers.")
 
@@ -89,6 +92,11 @@
 (defface doconce-header-face
   '((t (:inherit font-lock-function-name-face :weight bold)))
   "Base face for headers."
+  :group 'doconce-faces)
+
+(defface doconce-list-face
+  '((t (:inherit font-lock-builtin-face)))
+  "Face for list item markers."
   :group 'doconce-faces)
 
 (defface doconce-code-face
@@ -147,6 +155,10 @@
   "^__.+?[.:?]__"
   "Regexp identifying Doconce admonitions.")
 
+(defconst doconce-regex-list
+  "^[ \t]*\\([o*-]\\)[ \t]+"
+  "Regular expression for matching lists.")
+
 (defconst doconce-regex-code
   "\\(^!bc\\([^§]+?\\)!ec\\)"
   "Regular expression for matching code blocks.")
@@ -168,7 +180,7 @@
   "Regular expression for matching links.")
 
 (defconst doconce-regex-comment
-  "^#.+$"
+  "#.+$"
   "Regular expression for matching comments.")
 
 (defconst doconce-regex-math-inline
@@ -208,6 +220,7 @@
    (cons doconce-regex-email 'doconce-url-face)
    (cons doconce-regex-link '((1 doconce-math-face)
                               (2 doconce-link-face)))
+   (cons doconce-regex-list '(1 doconce-footnote-face))
    (cons doconce-regex-footnote 'doconce-footnote-face)
    (cons doconce-regex-special-lines '(1 doconce-special-lines-face)))
   "Syntax highlighting for Doconce files.")
@@ -276,7 +289,6 @@ the match data reflects the `outline-regexp'."
     (when (and new-head (string-match-p doconce-regex-header new-head))
       (delete-char (- (point-at-eol) (point-at-bol)))
       (insert new-head))))
-
 
 (defun doconce-indent-line ()
   "Indent the current line using some heuristics.
@@ -468,9 +480,7 @@ Calls `doconce-cycle' with argument t."
                                 ("=========   =========" . 1)))
   (doconce-reload-extensions)
   (add-hook 'font-lock-extend-region-functions
-            'doconce-font-lock-extend-region)
-
-  )
+            'doconce-font-lock-extend-region))
 
 (provide 'doconce-mode)
 
