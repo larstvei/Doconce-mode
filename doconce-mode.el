@@ -254,6 +254,40 @@
     (insert (car (rassoc level outline-heading-alist)))
     (search-backward "  " (point-at-bol) t)))
 
+(defun doconce-get-list-str ()
+  "Returns the closest list-prefix or a string with white space
+only. It calls itself recursively checking previous lines for
+either a list item or a white space indicating a paragraph."
+  (goto-char (point-at-bol))
+  (cond ((bobp) "")
+        ((and (not (looking-at doconce-regex-header))
+              (not (looking-at doconce-regex-list))
+              (not (looking-at "^[ \t]*$")))
+         (previous-line)
+         (let ((res (doconce-get-list-str)))
+           (forward-line) res))
+        (t (buffer-substring (match-beginning 0) (match-end 0)))))
+
+(defun doconce-insert-list-item-or-header ()
+  "Insert a new list item if the point is inside a list structure."
+  (interactive)
+  (let ((empty-line
+         (string-match-p
+          "^[ \t]*$" (buffer-substring (point-at-bol) (point-at-eol))))
+        (pos (point)))
+    ;; If the line is empty we could replace this with a list-item.
+    (when empty-line (previous-line))
+    (let* ((list-str (doconce-get-list-str))
+           (list-str (replace-regexp-in-string
+                      "=+ \\(.*\\) =+" "" list-str nil nil 1)))
+      ;; If the recursion stopped at an empty line we're not in a list.
+      (if (string-match-p "^[ \t]*$" list-str)
+          (goto-char pos)
+        (end-of-line)
+        ;; Either we're replacing an empty line, or we make a new one.
+        (if empty-line (forward-line) (newline))
+        (insert list-str)))))
+
 (defun doconce-outline-level ()
   "Function that takes no args to compute a header's nesting level in an
 outline. It assumes the point is at the beginning of a header line and that
@@ -449,8 +483,11 @@ Calls `doconce-cycle' with argument t."
     (define-key map (kbd "<S-tab>")  'doconce-shifttab)
     (define-key map (kbd "<backtab>") 'doconce-shifttab)
 
-    (define-key map (kbd "<M-right>") 'doconce-promote)
-    (define-key map (kbd "<M-left>")  'doconce-demote)
+    (define-key map (kbd "M-<right>") 'doconce-promote)
+    (define-key map (kbd "M-<right>") 'doconce-promote)
+
+    (define-key map (kbd "M-<return>")  'doconce-insert-list-item-or-header)
+    (define-key map (kbd "M-RET")  'doconce-insert-list-item-or-header)
 
     (define-key map (kbd "C-c C-l") 'doconce-insert-link)
     (org-defkey map (kbd "C-c C-o") 'org-open-at-point)
