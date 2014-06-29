@@ -242,13 +242,10 @@
 (defun doconce-insert-heading ()
   "An interactive function that inserts a Doconce heading."
   (interactive)
-  (let (level)
-    (save-excursion
-      (setq level
-            (condition-case nil
-                (and (outline-back-to-heading t)
-                     (doconce-outline-level))
-              (error 2))))
+  (let ((level (save-excursion
+                 (condition-case nil
+                     (and (outline-back-to-heading t)
+                          (doconce-outline-level)) (error 2)))))
     (unless (= (point-at-bol) (point-at-eol))
       (beginning-of-line) (open-line 1))
     (insert (car (rassoc level outline-heading-alist)))
@@ -417,13 +414,11 @@ Derived from `org-cycle'."
       (show-all)
       (message "SHOW ALL")
       (setq doconce-cycle-global-status 1))
-
      (t
       ;; Defaults to overview
       (hide-body)
       (message "OVERVIEW")
       (setq doconce-cycle-global-status 2))))
-
    ((save-excursion (beginning-of-line 1) (looking-at outline-regexp))
     ;; At a heading: rotate between three different views
     (outline-back-to-heading)
@@ -464,7 +459,6 @@ Derived from `org-cycle'."
         (hide-subtree)
         (message "FOLDED")
         (setq doconce-cycle-subtree-status 'folded)))))
-
    (t
     (indent-for-tab-command))))
 
@@ -484,13 +478,13 @@ Calls `doconce-cycle' with argument t."
     (define-key map (kbd "<backtab>") 'doconce-shifttab)
 
     (define-key map (kbd "M-<right>") 'doconce-promote)
-    (define-key map (kbd "M-<right>") 'doconce-promote)
+    (define-key map (kbd "M-<left>") 'doconce-demote)
 
     (define-key map (kbd "M-<return>")  'doconce-insert-list-item-or-header)
     (define-key map (kbd "M-RET")  'doconce-insert-list-item-or-header)
 
     (define-key map (kbd "C-c C-l") 'doconce-insert-link)
-    (org-defkey map (kbd "C-c C-o") 'org-open-at-point)
+    (define-key map (kbd "C-c C-o") 'org-open-at-point)
 
     (define-key map [remap outline-insert-heading] 'doconce-insert-heading)
     (define-key map [remap outline-promote] 'doconce-promote)
